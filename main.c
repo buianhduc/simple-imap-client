@@ -5,16 +5,20 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <getopt.h>
 #include <netdb.h>
+#include <errno.h>
 #include "communication.h"
 
 #define PORT "143"
 #define PERROR(MSG) fprintf(stderr, MSG);
 
 extern int asprintf(char**, const char*, ...);
+
+extern int errno;
 int main(int argc, char *argv[]) {
     int opt, messageNum = -1, ind = 0;
     char *username, *password, *dir, *command = NULL, *server_name = NULL;
@@ -28,15 +32,15 @@ int main(int argc, char *argv[]) {
     while ((opt = getopt(argc, argv, "u:p:f:n:t:")) != -1) {
         switch (opt) {
         case 'u':
-            username = malloc(strlen(optarg));
+            username = malloc(strlen(optarg) + 1);
             strcpy(username, optarg);
             break;
         case 'p':
-            password = malloc(strlen(optarg));
+            password = malloc(strlen(optarg) + 1);
             strcpy(password, optarg);
             break;
         case 'f':
-            dir = malloc(strlen(optarg));
+            dir = malloc(strlen(optarg) + 1);
             strcpy(dir, optarg);
             break;
         case 'n':
@@ -51,17 +55,17 @@ int main(int argc, char *argv[]) {
     }
     for (int idx = optind; idx < argc; idx++){
         if (command == NULL && argv[idx] != NULL){
-            command = malloc(strlen(argv[idx]));
+            command = malloc(strlen(argv[idx]) + 1);
             strcpy(command, argv[idx]);
         } else if (server_name == NULL && argv[idx] != NULL){
-            server_name = malloc(strlen(argv[idx]));
+            server_name = malloc(strlen(argv[idx]) + 1);
             strcpy(server_name, argv[idx]);
         }
     }
 
 
     // Validate program arguments
-    if (command == NULL || server_name == NULL) exit(E_INVALID_ARGS);
+    if (NULL == command || NULL == server_name) exit(E_INVALID_ARGS);
 
     // Create a socket
     struct addrinfo *addrSocket = NULL;
@@ -71,14 +75,16 @@ int main(int argc, char *argv[]) {
     if (-1 != connfd){
         check_response(connfd);
     }
-    close(connfd);
+    if (-1 == close(connfd)) {
+        fprintf(stderr, "Error closing connection");
+    }
 
     // Free pointers
     free(username);
     free(password);
-    if (dir != NULL) free(dir);
+    if (NULL != dir) free(dir);
     free(command);
     free(server_name);
-    freeaddrinfo(addrSocket);
+    if (addrSocket != NULL) freeaddrinfo(addrSocket);
     return EXIT_SUCCESS;
 }

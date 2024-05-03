@@ -21,10 +21,11 @@ int create_connection(char* emailServer, char* port, struct addrinfo** res){
     hints.ai_family = AF_INET6;
     hints.ai_socktype = SOCK_STREAM;
     s = getaddrinfo(emailServer, port, &hints, res);
-
+    
     if (0 != s){
-        handle_error(E_CONN_INIT);
-        return -1;
+        hints.ai_family = AF_INET;
+        s = getaddrinfo(emailServer, port, &hints, res);
+        if (0 != s) handle_error(E_CONN_INIT);
     }
 
     // Search for a socket
@@ -47,15 +48,13 @@ int create_connection(char* emailServer, char* port, struct addrinfo** res){
     // Cannot connect to server
     if (0 == canConnect) return -1;
 
-    // Free pointers
-    freeaddrinfo(rp);
 
     return connfd;
 }
 
 void handle_error(int errCode) {
     fprintf(stderr, "SOMETHING WENT WRONG");
-    exit(errCode);
+    
 }
 
 void check_response(int connfd) {
@@ -67,12 +66,15 @@ void check_response(int connfd) {
         char* token = strtok(recvBuff, " ");
         if (NULL != token){
             token = strtok(NULL, " ");
-            if (0 == strcmp(token, "OK")) {
-                printf("OK");
-                return;
+            if (0 == strcmp(token, IMAP_OK)) {
+                fprintf(stderr,"Connection OK");
             }
         } else {
             fprintf(stderr, "AGHHHHH");
         }
+        free(recvBuff);
+        return;
     }
+    free(recvBuff);
+    exit(E_SERVER_RESPONSE);
 }
