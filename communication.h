@@ -4,10 +4,7 @@
 
 #ifndef _COMMUNICATION_H_
 #define _COMMUNICATION_H_
-#include "ERROR_CODE.h"
-#include "IMAP_RESPONSE.h"
-#include "dynamic_string.h"
-#include "utils.h"
+#define _POSIX_C_SOURCE 200112L
 #include <errno.h>
 #include <getopt.h>
 #include <netdb.h>
@@ -16,6 +13,13 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
+#include "ERROR_CODE.h"
+#include "IMAP_RESPONSE.h"
+#include "dynamic_string.h"
+#include "utils.h"
+
+struct addrinfo;
 
 // ===== Base operation for communicating with the server ====
 void handle_error(int errCode);

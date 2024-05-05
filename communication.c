@@ -92,6 +92,7 @@ string *recv_from_server(int connfd, char* tag){
         recvBuff[receivedBytes] = 0;
         result = append(result, recvBuff);
     } while (strstr(recvBuff, tag) == NULL);
+    free(recvBuff);
     return result;
 }
 
@@ -113,12 +114,14 @@ ssize_t send_to_server(int connfd, char* command, size_t nbytes){
 int login_to_server(int connfd, char *username, char *password) {
     char* command = NULL;
     char* tag = get_imap_tag();
-    (void) asprintf(&command, "%s LOGIN %s %s\r\n", tag, username, password);
+    (void) asprintf(&command, "%s LOGIN \"%s\" \"%s\"\r\n", tag, username, password);
     ssize_t byteSent = send_to_server(connfd, command, get_strlen(command));
     if (byteSent > 0){
         string* response = recv_from_server(connfd, tag);
         if (response != NULL){
             if (strstr(response->str, IMAP_OK) != NULL){
+                free_string(response);
+                free(command);
                 return 1;
             }
             if (strstr(response->str, IMAP_NO) != NULL){
@@ -136,13 +139,14 @@ int select_folder(int connfd, const char *folderDirectory) {
     if (folderDirectory == NULL){
         folderDirectory = "INBOX";
     }
-    (void) asprintf(&command, "%s SELECT %s\r\n", tag, folderDirectory);
+    (void) asprintf(&command, "%s SELECT \"%s\"\r\n", tag, folderDirectory);
     ssize_t byteSent = send_to_server(connfd, command, get_strlen(command));
     if (byteSent <= 0) return -1;
     string* response = recv_from_server(connfd, tag);
 
     if (strstr(response->str, IMAP_OK)){
-        free(response);
+        free(command);
+        free_string(response);
         return 1;
     }
     if (strstr(response->str, IMAP_NO)) {
@@ -152,7 +156,8 @@ int select_folder(int connfd, const char *folderDirectory) {
         fprintf(stderr, "Unknown args");
     }
 
-    free(response);
+    free_string(response);
+    free(command);
     return -1;
 }
 string parse_response(string s, char* tag){
@@ -184,8 +189,11 @@ int retrieve_email(int connfd, int num_message){
     if (strstr(buff->str, IMAP_OK) != NULL){
         string content = parse_response(*buff, tag);
         printf("%s", content.str);
+        free_string(buff);
+        free(command);
         return 1;
     }
     free_string(buff);
+    free(command);
     return -1;
 }

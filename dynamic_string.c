@@ -14,17 +14,21 @@ string* create_string(size_t initialSize){
 }
 string* create_string_from_char(char* src){
     string* new = create_string(strlen(src));
-    (void) strlcat(new->str, src, new->len + strlen(src));
+    (void) strcat(new->str, src);
     new->len = strlen(src);
     return new;
 }
 string* append(string* dst, char* src){
     ssize_t len = strlen(src);
     if (dst->size < len + dst->len){
-        dst->str = realloc(dst->str, 2*(dst->size));
+        char* tmp = realloc(dst->str, dst->size + 2*len + 5);
+        assert(tmp != NULL);
+        dst->str = tmp;
+        dst->size += (2*len + 5);
     }
-    (void) strlcat(dst->str, src, len + dst->len + 1);
     dst->len += len;
+    (void) strncat(dst->str, src, len);
+    
     return dst;
 }
 void free_string(string* str){
