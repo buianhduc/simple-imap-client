@@ -3,25 +3,26 @@
 //
 #define _POSIX_C_SOURCE 200112L
 #define _GNU_SOURCE
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/socket.h>
+#include "communication.h"
+#include "email_handle.h"
+#include "utils.h"
+#include <errno.h>
 #include <getopt.h>
 #include <netdb.h>
-#include <errno.h>
-#include "communication.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 #define PORT "143"
-#define PERROR(MSG) fprintf(stderr, MSG);
 
 extern int asprintf(char**, const char*, ...);
 
 extern int errno;
 int main(int argc, char *argv[]) {
-    int opt, messageNum = -1, ind = 0;
-    char *username, *password, *dir, *command = NULL, *server_name = NULL;
+    int opt, messageNum = -1;
+    char *username=NULL, *password = NULL, *dir = NULL, *command = NULL, *server_name = NULL;
     // Arguments for the program:
     // fetchmail
     //        -u <username> -p <password> [-f <folder>] [-n <messageNum>]
@@ -74,6 +75,23 @@ int main(int argc, char *argv[]) {
     // Connection successful
     if (-1 != connfd){
         check_response(connfd);
+        if (1 == login_to_server(connfd, username, password)){
+            fprintf(stderr, "LOGIN OK\n");
+        } else {
+            printf("Login failure\n");
+            exit(E_SERVER_RESPONSE);
+        }
+        if (1 == select_folder(connfd, dir)){
+            fprintf(stderr, "SELECT OK\n");
+        } else {
+            printf("Folder not found\n");
+            exit(E_SERVER_RESPONSE);
+        }
+
+        if (retrieve_email(connfd, messageNum) == -1){
+            printf("Message not found\n");
+            exit(E_SERVER_RESPONSE);
+        }
     }
     if (-1 == close(connfd)) {
         fprintf(stderr, "Error closing connection");

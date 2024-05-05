@@ -1,6 +1,6 @@
 CFLAGS = -Wall -g -std=c17
 
-SRC = main.c communication.c utils.c dynamicString.c
+SRC = main.c communication.c utils.c email_handle.c dynamic_string.c
 OBJ = $(SRC:.c=.o)
 
 EXE = fetchmail

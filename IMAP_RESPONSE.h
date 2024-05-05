@@ -9,6 +9,6 @@
 #define IMAP_NO "NO"
 #define IMAP_BAD "BAD"
 #define IMAP_UNTAGGED "*"
-
+#define BUFFER_DEFAULT_SIZE 2048
 
 #endif //_IMAP_RESPONSE_H_
