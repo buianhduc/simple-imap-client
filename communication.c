@@ -172,7 +172,10 @@ string parse_response(string s, char* tag){
 int retrieve_email(int connfd, int num_message){
     char* command = NULL;
     char* tag = get_imap_tag();
-    asprintf(&command, "%s FETCH %d BODY.PEEK[]\r\n", tag, num_message);
+    if (num_message == -1)
+        asprintf(&command, "%s FETCH * BODY.PEEK[]\r\n", tag);
+    else
+        asprintf(&command, "%s FETCH %d BODY.PEEK[]\r\n", tag, num_message);
     if(send_to_server(connfd, command, get_strlen(command)) <= 0){
         free(command);
         return -1;
