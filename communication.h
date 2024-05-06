@@ -1,10 +1,9 @@
 //
 // Created by Đức Bùi on 1/5/24.
 //
-
+#define _POSIX_C_SOURCE 200112L
 #ifndef _COMMUNICATION_H_
 #define _COMMUNICATION_H_
-#define _POSIX_C_SOURCE 200112L
 #include <errno.h>
 #include <getopt.h>
 #include <netdb.h>
@@ -21,6 +20,7 @@
 
 struct addrinfo;
 
+int asprintf(char **ret, const char *format, ...);
 // ===== Base operation for communicating with the server ====
 void handle_error(int errCode);
 int create_connection(char* emailServer, char* port, struct addrinfo **res);

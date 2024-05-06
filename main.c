@@ -2,7 +2,6 @@
 // Created by Đức Bùi on 29/4/24.
 //
 #define _POSIX_C_SOURCE 200112L
-#define _GNU_SOURCE
 #include "communication.h"
 #include "email_handle.h"
 #include "utils.h"
