@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
             // char* mimeContent = get_mime(email->str);
             // free(mimeContent);
         }
-        if (email == NULL) free_string(email);
+        if (email != NULL) free_string(email);
     }
     if (-1 == close(connfd)) {
         fprintf(stderr, "Error closing connection");

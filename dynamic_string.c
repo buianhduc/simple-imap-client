@@ -13,9 +13,14 @@ string* create_string(size_t initialSize){
     return new;
 }
 string* create_string_from_char(char* src){
-    string* new = create_string(strlen(src));
-    (void) strcat(new->str, src);
+    string* new = create_string(strlen(src) + 2);
+    (void) strncpy(new->str, src, strlen(src));
     new->len = strlen(src);
+    return new;
+}
+string* create_string_from_string(const string* s){
+    string* new = create_string(s->size + 1);
+    (void) strncat(new->str, s->str, s->len - 1);
     return new;
 }
 string* append(string* dst, char* src){

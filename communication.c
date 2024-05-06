@@ -161,18 +161,19 @@ int select_folder(int connfd, const char *folderDirectory) {
     free(command);
     return -1;
 }
-void parse_response(string* s, char* tag){
+string* parse_response(string* s, char* tag){
     size_t i = 0;
     char* lastLine = strstr(s->str, tag);
     if (lastLine == NULL){
         fprintf(stderr, "Error parsing message");
         exit(E_PARSE);
     }
-    s->str[lastLine-s->str - 2] = '\0';
-    s->len = strlen(s->str);
+
     for (i = 0; i < s->len && s->str[i] != '\n'; i++);
-    s->str += (i+1);
-    s->len = strlen(s->str);
+    string* content = create_string_from_char(s->str + i + 1);
+    content->str[(lastLine - s->str) - 3] = '\0';
+    content->len = strlen(content->str);
+    return content;
 }
 string* retrieve_email(int connfd, int num_message){
     char* command = NULL;
@@ -187,9 +188,10 @@ string* retrieve_email(int connfd, int num_message){
     }
     string* buff = recv_from_server(connfd, tag);
     if (strstr(buff->str, IMAP_OK) != NULL){
-        parse_response(buff, tag);
+        string* cnt = parse_response(buff, tag);
         free(command);
-        return buff;
+        free_string(buff);
+        return cnt;
     }
     free_string(buff);
     free(command);

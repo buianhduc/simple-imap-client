@@ -21,6 +21,7 @@ typedef struct dynamic_string string;
 
 string* create_string(size_t initialSize);
 string* create_string_from_char(char* src);
+string* create_string_from_string(const string* s);
 string* append(string* dst, char* src);
 void free_string(string* str);
 #endif //_DYNAMIC_STRING_H_
