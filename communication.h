@@ -20,6 +20,7 @@
 #include "utils.h"
 
 struct addrinfo;
+int asprintf(char** ret, const char *format, ...);
 
 // ===== Base operation for communicating with the server ====
 void handle_error(int errCode);

@@ -87,6 +87,7 @@ string *recv_from_server(int connfd, char* tag){
         if (receivedBytes <= 0){
             perror("Error occurred while reading from server");
             free(recvBuff);
+            free_string(result);
             return NULL;
         }
         recvBuff[receivedBytes] = 0;
