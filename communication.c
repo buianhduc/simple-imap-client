@@ -160,21 +160,20 @@ int select_folder(int connfd, const char *folderDirectory) {
     free(command);
     return -1;
 }
-string parse_response(string s, char* tag){
+void parse_response(string* s, char* tag){
     size_t i = 0;
-    char* lastLine = strstr(s.str, tag);
+    char* lastLine = strstr(s->str, tag);
     if (lastLine == NULL){
         fprintf(stderr, "Error parsing message");
         exit(E_PARSE);
     }
-    s.str[lastLine-s.str - 1] = '\0';
-    s.len = strlen(s.str);
-    for (i = 0; i < s.len && s.str[i] != '\n'; i++);
-    s.str += (i+1);
-    s.len = strlen(s.str);
-    return s;
+    s->str[lastLine-s->str - 2] = '\0';
+    s->len = strlen(s->str);
+    for (i = 0; i < s->len && s->str[i] != '\n'; i++);
+    s->str += (i+1);
+    s->len = strlen(s->str);
 }
-int retrieve_email(int connfd, int num_message){
+string* retrieve_email(int connfd, int num_message){
     char* command = NULL;
     char* tag = get_imap_tag();
     if (num_message == -1)
@@ -183,17 +182,15 @@ int retrieve_email(int connfd, int num_message){
         asprintf(&command, "%s FETCH %d BODY.PEEK[]\r\n", tag, num_message);
     if(send_to_server(connfd, command, get_strlen(command)) <= 0){
         free(command);
-        return -1;
+        return NULL;
     }
     string* buff = recv_from_server(connfd, tag);
     if (strstr(buff->str, IMAP_OK) != NULL){
-        string content = parse_response(*buff, tag);
-        printf("%s", content.str);
-        free_string(buff);
+        parse_response(buff, tag);
         free(command);
-        return 1;
+        return buff;
     }
     free_string(buff);
     free(command);
-    return -1;
+    return NULL;
 }

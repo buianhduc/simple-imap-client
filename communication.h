@@ -32,6 +32,6 @@ ssize_t send_to_server(int connfd, char* command, size_t nbytes);
 // ===== Routines for client =====
 int login_to_server(int connfd, char *username, char *password);
 int select_folder(int connfd, const char *folderDirectory);
-int retrieve_email(int connfd, int num_message);
+string* retrieve_email(int connfd, int num_message);
 void retrieve_message(int connfd, int num_message);
 #endif //_COMMUNICATION_H_

@@ -87,11 +87,20 @@ int main(int argc, char *argv[]) {
             printf("Folder not found\n");
             exit(E_SERVER_RESPONSE);
         }
-
-        if (retrieve_email(connfd, messageNum) == -1){
-            printf("Message not found\n");
-            exit(E_SERVER_RESPONSE);
+        string* email = NULL;
+        if (!strcmp(command, "retrieve")){
+            email = retrieve_email(connfd, messageNum);
+            if (email == NULL){
+                printf("Message not found\n");
+                exit(E_SERVER_RESPONSE);
+            } 
+            printf("%s",email->str);
+        } else {
+            email = retrieve_email(connfd, messageNum);
+            // char* mimeContent = get_mime(email->str);
+            // free(mimeContent);
         }
+        if (email == NULL) free_string(email);
     }
     if (-1 == close(connfd)) {
         fprintf(stderr, "Error closing connection");
