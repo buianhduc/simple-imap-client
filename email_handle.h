@@ -20,8 +20,12 @@
 
 // ==== structs ====
 struct field{
-    string name;
-    string content;
+    string* name;
+    string* content;
+};
+struct mime{
+    string* contentTransferEncoding, contentType;
+    string* content;
 };
 // ==== end of structs ====
 

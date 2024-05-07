@@ -5,7 +5,7 @@
 #include "communication.h"
 
 char* get_imap_tag(){
-    return "COMMAND5MAY2024AASDNWHEBR";
+    return "A0001";
 }
 /**
  * Return connection descriptor
@@ -163,16 +163,20 @@ int select_folder(int connfd, const char *folderDirectory) {
 }
 string* parse_response(string* s, char* tag){
     size_t i = 0;
-    char* lastLine = strstr(s->str, tag);
+    
+
+    for (i = 0; i < s->len && s->str[i] != '\n'; i++);
+    string* content = create_string_from_char(s->str + i + 1);
+    
+    char* lastLine = strstr(content->str, tag);
     if (lastLine == NULL){
         fprintf(stderr, "Error parsing message");
         exit(E_PARSE);
     }
 
-    for (i = 0; i < s->len && s->str[i] != '\n'; i++);
-    string* content = create_string_from_char(s->str + i + 1);
-    content->str[(lastLine - s->str) - 3] = '\0';
+    content->str[lastLine-content->str - 1] = '\0';
     content->len = strlen(content->str);
+    
     return content;
 }
 string* retrieve_email(int connfd, int num_message){

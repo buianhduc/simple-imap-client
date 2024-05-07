@@ -8,7 +8,12 @@
 #define SPACE 0x20
 #define TAB 0x09
 #define MIME_HEADER_START "MIME-Version: 1.0\r\nContent-Type: multipart/alternative;"
-#define NAURRRR NULL
+
+char* strdup(const char *s);
+
+char* get_mime_boundary_start(const char* value){
+}
+
 
 struct field* parse_header(string headerContent){
     // struct field* fields = calloc(2048, sizeof(struct field));
@@ -44,21 +49,56 @@ struct field* parse_header(string headerContent){
     // }
 }
 
+string* get_mime_content(char* message, const char* boundaryValue){
+    
+}
+char* get_mime_plain(const char* mimeStart, const char* mimeEnd, const char* boundaryStart, const char* boundaryEnd){
+    // printf("%s", i);
+    return NULL;
+}
+
 char* get_mime(const char* msg){
     char* ptr = strstr(msg, MIME_HEADER_START);
     // Cannot find
     if (ptr == NULL) {
         return NULL;
     }
+    // Find MIME first header
     char* boundary = strstr(ptr, "boundary=");
     if (boundary == NULL) return NULL;
 
     char* endOfBoundary = strstr(boundary, CRLF);
     if (endOfBoundary  == NULL) return NULL;
-
+    
+    // Get MIME boundary value
     int boundaryValueLength = (endOfBoundary - boundary - strlen("boundary=")) + 1;
     char* boundaryValue = calloc(boundaryValueLength + 2, sizeof (char));
     strncpy(boundaryValue, boundary+strlen("boundary="), boundaryValueLength);
     boundaryValue[boundaryValueLength-1] = '\0';
-    return boundaryValue;
+
+    // Locate the boundary of the MIME field
+    char* boundaryStart = NULL;
+    asprintf(&boundaryStart, "\r\n--%s", boundaryValue);
+
+    char* boundaryEnd = NULL;
+    asprintf(&boundaryEnd, "\r\n--%s--", boundaryValue);
+
+    char* mimeStart = strstr(boundary, boundaryStart);
+    if (mimeStart == NULL) {
+        free(boundaryStart);
+        free(boundaryEnd);
+        return NULL;   
+    }
+
+    char* mimeEnd = strstr(boundary, boundaryEnd);
+    if (mimeEnd == NULL){
+        free(boundaryStart);
+        free(boundaryEnd);
+        return NULL;
+    }
+    
+    char* result = get_mime_plain(mimeStart, mimeEnd, boundaryStart, boundaryEnd);
+    
+    return NULL;
 }
+

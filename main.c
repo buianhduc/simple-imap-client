@@ -96,15 +96,24 @@ int main(int argc, char *argv[]) {
             printf("%s",email->str);
         } else {
             email = retrieve_email(connfd, messageNum);
-            // char* mimeContent = get_mime(email->str);
+            char* mimeContent = get_mime(email->str); 
+            // printf("%s\n", mimeContent);
             // free(mimeContent);
         }
         if (email != NULL) free_string(email);
     }
+    char *exit_command;
+    asprintf(&exit_command, "%s LOGOUT\r\n", "A01");
+    send_to_server(connfd, exit_command ,get_strlen((exit_command)));
+    string* response = recv_from_server(connfd, "A01");
+    if (strstr(response->str, "BYE") == NULL) {
+        fprintf(stderr, "Error logout from server");
+    }
     if (-1 == close(connfd)) {
         fprintf(stderr, "Error closing connection");
     }
-
+    free(exit_command);
+    free_string(response);
     // Free pointers
     free(username);
     free(password);
