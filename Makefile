@@ -4,7 +4,7 @@ SRC = main.c communication.c utils.c email_handle.c dynamic_string.c
 OBJ = $(SRC:.c=.o)
 
 EXE = fetchmail
-LIBS += -lm
+LIBS += -lm -lc
 
 $(EXE): $(OBJ)
 	cc $(CFLAGS) -o $(EXE) $(OBJ) $(LIBS)

@@ -8,97 +8,85 @@
 #define SPACE 0x20
 #define TAB 0x09
 #define MIME_HEADER_START "MIME-Version: 1.0\r\nContent-Type: multipart/alternative;"
+#define DEFAULT_BOUNDARY_LENGTH 70
 
 char* strdup(const char *s);
+char* strcasestr(char*, char*);
+int strncasecmp(const char*, const char*, unsigned long);
 
-char* get_mime_boundary_start(const char* value){
+struct mime_s{
+    char* plain_message;
+    char* encoding_type;
+    char* content_type;
+};
+
+char* get_mime_plain(char* msg){
+    char* content = strstr(msg, "\r\n\r\n");
+    char* contentEnd = strstr(msg, "\r\n\0");
+    content += 4;
+
+    *contentEnd = '\0';
+    content = strdup(content);
+    return content;
 }
 
+string *get_mime_section(char *content){
 
-struct field* parse_header(string headerContent){
-    // struct field* fields = calloc(2048, sizeof(struct field));
-    // char *header = headerContent.str;
-    // char *rest = header;
-    // char* line = strtok_r(line, CRLF, &rest);
-    // struct field toBeFeed = {NULL, NULL};
-    // int size = 0;
-    // int fieldInit = 0;
-    // while (line != NULL){
-    //     // If no field been init
-    //     if (!fieldInit){
-    //         // Find Colon (where the field's name ends)
-    //         char* colonPos = strchr(line,":");
-    //         if (colonPos == NULL) {
-    //             fprintf(stderr, "Error parsing email's field");
-    //             exit(E_PARSE);
-    //         }
-    //         toBeFeed.
-    //         toBeFeed.content = "";
-    //         strncpy(toBeFeed.name, line, colonPos - line);
-    //         fieldInit = 1;
-    //     } else {
-    //         // Finished reading field's content
-    //         if (line[0] != SPACE && line[0] != TAB) {
-    //             fieldInit = 0;
-    //             fields[size] = toBeFeed;
-    //             continue;
-    //         }
-    //         toBeFeed.content = realloc(sizeof(line)+1);
-    //         strncpy(toBeFeed.content, line, sizeof(line));
-    //     }
-    // }
-}
+    if (content == NULL) return NULL;
+    // Find MIME Header
+    char* mimeHeader = strcasestr(content, "\r\nMIME-Version:");
+    if (mimeHeader == NULL) return NULL;
 
-string* get_mime_content(char* message, const char* boundaryValue){
-    
-}
-char* get_mime_plain(const char* mimeStart, const char* mimeEnd, const char* boundaryStart, const char* boundaryEnd){
-    // printf("%s", i);
-    return NULL;
-}
+    char* contentType = strcasestr(mimeHeader, "\r\nContent-type:");
+    if (contentType == NULL) return NULL;
 
-char* get_mime(const char* msg){
-    char* ptr = strstr(msg, MIME_HEADER_START);
-    // Cannot find
-    if (ptr == NULL) {
+    // Find Boundary value
+    char* boundaryValuePtr = strcasestr(contentType, "boundary=");
+    if (boundaryValuePtr == NULL) return NULL;
+    boundaryValuePtr += strlen("boundary=");
+    char *tmp = boundaryValuePtr;
+    if (*tmp == '"') {
+        tmp++;
+        boundaryValuePtr ++;
+        for (; *tmp != '"' && (tmp - boundaryValuePtr) <= DEFAULT_BOUNDARY_LENGTH; tmp++){
+//            if (*tmp == '\\') tmp++;
+        }
+    } else
+        for (; *tmp != '\r' && *(tmp+1) != '\n'; tmp++);
+    char* boundaryValue = calloc(DEFAULT_BOUNDARY_LENGTH, sizeof(char));
+    if (boundaryValue == NULL){
+        free(content);
         return NULL;
     }
-    // Find MIME first header
-    char* boundary = strstr(ptr, "boundary=");
-    if (boundary == NULL) return NULL;
+    boundaryValue = strncpy(boundaryValue, boundaryValuePtr, (tmp - boundaryValuePtr));
+    boundaryValue[tmp - boundaryValuePtr] = '\0';
 
-    char* endOfBoundary = strstr(boundary, CRLF);
-    if (endOfBoundary  == NULL) return NULL;
-    
-    // Get MIME boundary value
-    int boundaryValueLength = (endOfBoundary - boundary - strlen("boundary=")) + 1;
-    char* boundaryValue = calloc(boundaryValueLength + 2, sizeof (char));
-    strncpy(boundaryValue, boundary+strlen("boundary="), boundaryValueLength);
-    boundaryValue[boundaryValueLength-1] = '\0';
 
-    // Locate the boundary of the MIME field
-    char* boundaryStart = NULL;
-    asprintf(&boundaryStart, "\r\n--%s", boundaryValue);
-
-    char* boundaryEnd = NULL;
-    asprintf(&boundaryEnd, "\r\n--%s--", boundaryValue);
-
-    char* mimeStart = strstr(boundary, boundaryStart);
-    if (mimeStart == NULL) {
-        free(boundaryStart);
-        free(boundaryEnd);
-        return NULL;   
+    // Extract content within boundary
+    char* boundaryStart = NULL, *boundaryEnd = NULL;
+    (void) asprintf(&boundaryStart, "--%s\r\n", boundaryValue);
+    (void) asprintf(&boundaryEnd, "--%s--\r\n", boundaryValue);
+    if (boundaryStart == NULL ||boundaryEnd == NULL){
+        exit(E_OTHER);
     }
 
-    char* mimeEnd = strstr(boundary, boundaryEnd);
-    if (mimeEnd == NULL){
-        free(boundaryStart);
-        free(boundaryEnd);
-        return NULL;
+    char* sectionStart = strcasestr(content, boundaryStart);
+    char* sectionEnd = strcasestr(content, boundaryEnd);
+    if (sectionEnd == NULL || sectionStart == NULL) exit (E_PARSE);
+
+    if (sectionEnd - content + strlen(boundaryEnd) > strlen(content)) {
+        exit(E_PARSE);
     }
-    
-    char* result = get_mime_plain(mimeStart, mimeEnd, boundaryStart, boundaryEnd);
-    
-    return NULL;
+
+    sectionEnd += strlen(boundaryEnd);
+
+    string* mimeSection = create_string(sectionEnd - sectionStart + 2);
+    mimeSection->str = strncpy(mimeSection->str, sectionStart, sectionEnd - sectionStart + 1);
+    mimeSection->len = (sectionEnd - sectionStart);
+    mimeSection->str[mimeSection->len] = '\0';
+
+    free(boundaryStart);
+    free(boundaryEnd);
+    return mimeSection;
 }
 

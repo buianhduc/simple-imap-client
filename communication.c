@@ -174,7 +174,7 @@ string* parse_response(string* s, char* tag){
         exit(E_PARSE);
     }
 
-    content->str[lastLine-content->str - 1] = '\0';
+    content->str[lastLine-content->str] = '\0';
     content->len = strlen(content->str);
     
     return content;

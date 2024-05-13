@@ -96,9 +96,13 @@ int main(int argc, char *argv[]) {
             printf("%s",email->str);
         } else {
             email = retrieve_email(connfd, messageNum);
-            char* mimeContent = get_mime(email->str); 
-            // printf("%s\n", mimeContent);
-            // free(mimeContent);
+            string* mimeContent = get_mime_section(email->str);
+            if (mimeContent == NULL){
+                printf("MIME Parsing Error");
+                return E_PARSE;
+            }
+             printf("%s", mimeContent->str);
+             free(mimeContent);
         }
         if (email != NULL) free_string(email);
     }

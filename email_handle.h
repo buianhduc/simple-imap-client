@@ -29,7 +29,7 @@ struct mime{
 };
 // ==== end of structs ====
 
-struct field* parse_header(string headerContent); 
-char* get_mime(const char* msg);
+struct field* parse_header(string headerContent);
+string *get_mime_section(char *content);
 
 #endif //_EMAIL_HANDLE_H_
