@@ -20,18 +20,45 @@ struct mime_s{
     char* content_type;
 };
 
-char* get_mime_plain(char* msg){
-    char* content = strstr(msg, "\r\n\r\n");
-    char* contentEnd = strstr(msg, "\r\n\0");
-    content += 4;
+string* get_mime_plain(string* msg, char* boundaryStart, char* boundaryEnd){
+    string* result = NULL;
+    char* contentType = NULL, *encoding = NULL;
+    // Get the end of the current section
+    char* sectionStart = msg->str;
+    char* sectionEnd = strcasestr(sectionStart + strlen(boundaryStart), boundaryStart);
+    char* nextSectionEnd = sectionEnd;
+    if (sectionEnd == NULL ){
+        sectionEnd = strcasestr(sectionStart, boundaryEnd);
+        if (sectionEnd == NULL) exit(E_PARSE);
+    }
+    for (; sectionStart != sectionEnd; sectionEnd = nextSectionEnd){
 
-    *contentEnd = '\0';
-    content = strdup(content);
-    return content;
+        nextSectionEnd = strcasestr(sectionEnd + strlen(boundaryStart), boundaryStart);
+        if (nextSectionEnd == NULL ){
+            nextSectionEnd = strcasestr(sectionEnd, boundaryEnd);
+            if (nextSectionEnd == NULL) exit(E_PARSE);
+        }
+        contentType = strcasestr(msg->str, "\r\nContent-Type:");
+        if (contentType != NULL) {
+            contentType += strlen("\r\nContent-Type: ");
+            if (strncasecmp(contentType, "text/plain", strlen("text/plain")) != 0)
+                continue;
+            encoding = strcasestr(msg->str, "\r\nContent-Transfer-Encoding:");
+            char* start = contentType > encoding ? contentType : encoding;
+            start += 2;
+            for (; *start != '\r' & *(start+1) != '\n'; start++);
+            result = create_string(sectionEnd - start +1);
+            result->str = strncpy(result->str, start+strlen("\r\n\r\n"), sectionEnd - start - strlen("\r\n\r\n"));
+            result->len = sectionEnd - sectionStart - strlen("\r\n\r\n");
+            result->str[result->len] = '\0';
+            break;
+        }
+        sectionStart = sectionEnd;
+    }
+    return result;
 }
 
 string *get_mime_section(char *content){
-
     if (content == NULL) return NULL;
     // Find MIME Header
     char* mimeHeader = strcasestr(content, "\r\nMIME-Version:");
@@ -64,8 +91,8 @@ string *get_mime_section(char *content){
 
     // Extract content within boundary
     char* boundaryStart = NULL, *boundaryEnd = NULL;
-    (void) asprintf(&boundaryStart, "--%s\r\n", boundaryValue);
-    (void) asprintf(&boundaryEnd, "--%s--\r\n", boundaryValue);
+    (void) asprintf(&boundaryStart, "\r\n--%s\r\n", boundaryValue);
+    (void) asprintf(&boundaryEnd, "\r\n--%s--\r\n", boundaryValue);
     if (boundaryStart == NULL ||boundaryEnd == NULL){
         exit(E_OTHER);
     }
@@ -85,8 +112,6 @@ string *get_mime_section(char *content){
     mimeSection->len = (sectionEnd - sectionStart);
     mimeSection->str[mimeSection->len] = '\0';
 
-    free(boundaryStart);
-    free(boundaryEnd);
-    return mimeSection;
+    return get_mime_plain(mimeSection, boundaryStart, boundaryEnd);
 }
 

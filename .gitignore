@@ -18,3 +18,6 @@
 Dockerfile
 docker
 *.txt
+
+# Personal test file
+run.sh

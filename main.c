@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
 #define PORT "143"
@@ -20,7 +19,8 @@ extern int asprintf(char**, const char*, ...);
 
 extern int errno;
 int main(int argc, char *argv[]) {
-    int opt, messageNum = -1;
+    int opt;
+    unsigned long messageNum = 0;
     char *username=NULL, *password = NULL, *dir = NULL, *command = NULL, *server_name = NULL;
     // Arguments for the program:
     // fetchmail
@@ -44,7 +44,10 @@ int main(int argc, char *argv[]) {
             strcpy(dir, optarg);
             break;
         case 'n':
-            messageNum = atoi(optarg);
+            messageNum = strtol(optarg, NULL, 10);
+            if (!optarg ) {
+                exit(E_INVALID_ARGS);
+            }
             break;
         case 't':
             break;
@@ -101,6 +104,7 @@ int main(int argc, char *argv[]) {
                 printf("MIME Parsing Error");
                 return E_PARSE;
             }
+
              printf("%s", mimeContent->str);
              free(mimeContent);
         }

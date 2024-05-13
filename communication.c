@@ -163,9 +163,7 @@ int select_folder(int connfd, const char *folderDirectory) {
 }
 string* parse_response(string* s, char* tag){
     size_t i = 0;
-    
-
-    for (i = 0; i < s->len && s->str[i] != '\n'; i++);
+    for (; i < s->len && s->str[i] != '\n'; i++);
     string* content = create_string_from_char(s->str + i + 1);
     
     char* lastLine = strstr(content->str, tag);
@@ -174,18 +172,18 @@ string* parse_response(string* s, char* tag){
         exit(E_PARSE);
     }
 
-    content->str[lastLine-content->str] = '\0';
+    content->str[lastLine-content->str-strlen("\r\n)")] = '\0';
     content->len = strlen(content->str);
     
     return content;
 }
-string* retrieve_email(int connfd, int num_message){
+string* retrieve_email(int connfd, unsigned long num_message){
     char* command = NULL;
     char* tag = get_imap_tag();
     if (num_message == -1)
         asprintf(&command, "%s FETCH * BODY.PEEK[]\r\n", tag);
     else
-        asprintf(&command, "%s FETCH %d BODY.PEEK[]\r\n", tag, num_message);
+        asprintf(&command, "%s FETCH %lu BODY.PEEK[]\r\n", tag, num_message);
     if(send_to_server(connfd, command, get_strlen(command)) <= 0){
         free(command);
         return NULL;
