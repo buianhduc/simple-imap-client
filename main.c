@@ -97,6 +97,8 @@ int main(int argc, char *argv[]) {
                 exit(E_SERVER_RESPONSE);
             } 
             printf("%s",email->str);
+        }else if(strcmp(command, "parse") == 0){
+            parse_header(connfd, messageNum);
         } else {
             email = retrieve_email(connfd, messageNum);
             string* mimeContent = get_mime_section(email->str);

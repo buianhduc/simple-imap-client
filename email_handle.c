@@ -3,6 +3,7 @@
 //
 
 #include "email_handle.h"
+#include "communication.h"
 #define LINE_LIMIT 998
 #define CRLF "\r\n"
 #define SPACE 0x20
@@ -19,6 +20,13 @@ struct mime_s{
     char* encoding_type;
     char* content_type;
 };
+
+typedef struct emailHeader{
+    char* from;
+    char* to;
+    char* date;
+    char* subject;
+}emailHeader_t;
 
 string* get_mime_plain(string* msg, char* boundaryStart, char* boundaryEnd){
     string* result = NULL;
@@ -115,3 +123,53 @@ string *get_mime_section(char *content){
     return get_mime_plain(mimeSection, boundaryStart, boundaryEnd);
 }
 
+void parse_header(int connfd, int message_num){
+    char* command = NULL;
+    char* tag = get_imap_tag();
+    char* fields[] = {"From", "To", "Date", "Subject"};
+    for(int i = 0; i < 4; i++){
+        if(message_num == -1){
+            asprintf(&command, "%s FETCH * BODY.PEEK[HEADER.FIELDS (%s)]\r\n", tag, fields[i]);
+        }else{
+            asprintf(&command, "%s FETCH %d BODY.PEEK[HEADER.FIELDS (%s)]\r\n", tag, message_num, fields[i]);
+        }
+        if(send_to_server(connfd, command, get_strlen(command)) > 0){
+            string* buff = recv_from_server(connfd, tag);
+            if(strstr(buff->str, IMAP_OK) != NULL){
+                printf("%s:%s\n", fields[i], (parse_field(buff, fields[i]))->str);
+            }
+            free_string(buff);
+        }
+        free(command);
+    }
+}
+
+string* parse_field(string* buff, char* field) {
+    string* parsed_field = (string*)malloc(sizeof(string));
+    size_t field_end = 0;
+    for (; field_end < buff->len && buff->str[field_end] != ':'; field_end++);
+    int content_start = field_end + 1; 
+    int content_end = content_start;
+
+    if (strcmp(field, "Subject") != 0) {
+        while (content_end < buff->len && buff->str[content_end] != '\n') {
+            content_end++;
+        }
+        parsed_field->len = content_end - content_start;
+        parsed_field->str = (char*)malloc((parsed_field->len + 1) * sizeof(char));
+        strncpy(parsed_field->str, buff->str + content_start, parsed_field->len);
+        parsed_field->str[parsed_field->len] = '\0';         
+    } else {
+        int unfolded_len = 0;
+        for (int i = content_start; i < buff->len; i++) {
+            if ((buff->str[i] == '\r') && (i + 2 < buff->len) && (buff->str[i + 1] == '\n') && (buff->str[i + 2] == ' ')) {
+                i += 2; 
+                continue;
+            }else if(buff->str[i] == '\n') break;
+            parsed_field->str[unfolded_len++] = buff->str[i];
+        }
+        parsed_field->str[unfolded_len] = '\0';
+        parsed_field->len = unfolded_len;
+    }
+    return parsed_field;
+}
