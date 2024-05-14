@@ -160,6 +160,7 @@ string* parse_field(string* buff, char* field) {
         strncpy(parsed_field->str, buff->str + content_start, parsed_field->len);
         parsed_field->str[parsed_field->len] = '\0';         
     } else {
+        // pretty sure segfault here
         int unfolded_len = 0;
         for (int i = content_start; i < buff->len; i++) {
             if ((buff->str[i] == '\r') && (i + 2 < buff->len) && (buff->str[i + 1] == '\n') && (buff->str[i + 2] == ' ')) {
