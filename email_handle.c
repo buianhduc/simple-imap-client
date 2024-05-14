@@ -46,10 +46,10 @@ string* get_mime_plain(string* msg, char* boundaryStart, char* boundaryEnd){
             encoding = strcasestr(msg->str, "\r\nContent-Transfer-Encoding:");
             char* start = contentType > encoding ? contentType : encoding;
             start += 2;
-            for (; *start != '\r' & *(start+1) != '\n'; start++);
-            result = create_string(sectionEnd - start +1);
-            result->str = strncpy(result->str, start+strlen("\r\n\r\n"), sectionEnd - start - strlen("\r\n\r\n"));
-            result->len = sectionEnd - sectionStart - strlen("\r\n\r\n");
+            for (; *start != '\r' && *(start+1) != '\n'; start++);
+            result = create_string(sectionEnd - start - strlen("\r\n\r\n") +1);
+            result->str = strncpy(result->str, start+strlen("\r\n\r\n"), sectionEnd - start - strlen("\r\n\r\n") + 1);
+            result->len = sectionEnd - start - strlen("\r\n\r\n");
             result->str[result->len] = '\0';
             break;
         }
@@ -112,6 +112,12 @@ string *get_mime_section(char *content){
     mimeSection->len = (sectionEnd - sectionStart);
     mimeSection->str[mimeSection->len] = '\0';
 
-    return get_mime_plain(mimeSection, boundaryStart, boundaryEnd);
-}
+    string* result = get_mime_plain(mimeSection, boundaryStart, boundaryEnd);
+    
+    free(boundaryStart);
+    free(boundaryEnd);
+    free(boundaryValue);
+    free_string(mimeSection);
+    return result;
 
+}

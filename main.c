@@ -18,10 +18,14 @@
 extern int asprintf(char**, const char*, ...);
 
 extern int errno;
+
+void setupTLS();
+
 int main(int argc, char *argv[]) {
     int opt;
     unsigned long messageNum = 0;
     char *username=NULL, *password = NULL, *dir = NULL, *command = NULL, *server_name = NULL;
+    int useTLS = 0;
     // Arguments for the program:
     // fetchmail
     //        -u <username> -p <password> [-f <folder>] [-n <messageNum>]
@@ -50,6 +54,7 @@ int main(int argc, char *argv[]) {
             }
             break;
         case 't':
+            useTLS = 1;
             break;
         default:
             fprintf(stderr, "%s", "Unknown arguments!\n");
@@ -105,8 +110,8 @@ int main(int argc, char *argv[]) {
                 return E_PARSE;
             }
 
-             printf("%s", mimeContent->str);
-             free(mimeContent);
+            printf("%s", mimeContent->str);
+            free_string(mimeContent);
         }
         if (email != NULL) free_string(email);
     }

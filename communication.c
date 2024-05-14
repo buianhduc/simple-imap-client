@@ -15,7 +15,7 @@ char* get_imap_tag(){
  */
 int create_connection(char* emailServer, char* port, struct addrinfo** res){
     // Create a socket
-    int connfd = 0, re = 1, s, n;
+    int connfd = 0, s;
     struct addrinfo hints, *rp;
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET6;
