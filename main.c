@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
+#include <regex.h>
 
 #define PORT "143"
 
@@ -30,7 +32,9 @@ int hasAnomolies(char* field){
     return 0;
 }
 
-void validate_args(char* username, char* password, char* command, char* server_name, long messageNum, int msgNumSpecified){
+
+
+void validate_args(char* username, char* password, char* command, char* server_name, long long messageNum, int msgNumSpecified){
     int isArgsCorrect = 1;
     if (NULL == username) {
         isArgsCorrect = 0;
@@ -48,9 +52,9 @@ void validate_args(char* username, char* password, char* command, char* server_n
         isArgsCorrect = 0;
         fprintf(stderr, "No server name provided\n");
     }
-    if (messageNum < 1 && msgNumSpecified){
-        isArgsCorrect = 0;
-        fprintf(stderr, "Incorrect message num\n");
+    if ((messageNum >= __INT32_MAX__ || messageNum <= 0) && messageNum != -1) {
+        fprintf(stderr, "Invalid sequence number\n");
+        exit(E_INVALID_ARGS);
     }
     if (!isArgsCorrect) exit(E_INVALID_ARGS);
 
@@ -61,9 +65,13 @@ void validate_args(char* username, char* password, char* command, char* server_n
     }
 }
 
+
+
+
+
 int main(int argc, char *argv[]) {
     int opt, isMsgNumSpecified = 0;
-    long messageNum = -1;
+    long long messageNum = -1;
     char *username=NULL, *password = NULL, *dir = NULL, *command = NULL, *server_name = NULL;
     // Arguments for the program:
     // fetchmail
@@ -88,12 +96,17 @@ int main(int argc, char *argv[]) {
                 strcpy(dir, optarg);
                 break;
             case 'n':
-                isMsgNumSpecified = 1;
-                messageNum = strtol(optarg, NULL, 10);
-                if (!optarg) {
-                    exit(E_INVALID_ARGS);
-                }
-                break;
+            if (strlen(optarg) > 0 && optarg[0] == '*') messageNum = -1;
+            else {
+                for (int i = 0; i < strlen(optarg); i++) 
+                    if (!isdigit(optarg[i]) || optarg[i] != '*') {
+                        fprintf(stderr, "Invalid sequence number\n");
+                        exit(E_INVALID_ARGS);
+                    }
+                
+                else messageNum = strtoll(optarg, NULL, 10);
+            }
+            break;
             case 't':
                 return 0;
             default:
