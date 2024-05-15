@@ -124,7 +124,6 @@ string *get_mime_section(char *content){
 }
 
 void parse_header(int connfd, int message_num){
-    
     char* tag = get_imap_tag();
     char* fields[] = {"From", "To", "Date", "Subject"};
     for(int i = 0; i < 4; i++){
@@ -148,6 +147,27 @@ void parse_header(int connfd, int message_num){
     
 }
 
+string* parse_subject(string* buff, int content_start) {
+    string* parsed_field = create_string(2048);
+    int unfolded_len = 0;
+    for (int i = content_start; i < buff->len; i++) {
+        if ((buff->str[i] == '\r') && (i + 2 < buff->len) && (buff->str[i + 1] == '\n') && (buff->str[i + 2] == ' ')) {
+            i += 1; 
+            continue;
+        } else if (buff->str[i] == '\r') {
+            break;
+        }
+        parsed_field->str[unfolded_len++] = buff->str[i];
+    }
+    parsed_field->str[unfolded_len] = '\0';
+    if(strcmp(parsed_field->str, "\0") == 0){
+        free_string(parsed_field);
+        return create_string_from_char(" <No subject>");
+    }
+    parsed_field->len = unfolded_len;
+    return parsed_field;
+}
+
 string* parse_field(string* buff, char* field) {
     string* parsed_field;
     size_t field_end = 0;
@@ -163,19 +183,35 @@ string* parse_field(string* buff, char* field) {
         parsed_field->len = content_end - content_start;
         parsed_field->str[parsed_field->len] = '\0';         
     } else {
-        parsed_field = create_string(2048);
-        int unfolded_len = 0;
-        for (int i = content_start; i < buff->len; i++) {
-            if ((buff->str[i] == '\r') && (i + 2 < buff->len) && (buff->str[i + 1] == '\n') && (buff->str[i + 2] == ' ')) {
-                i += 1; 
-                continue;
-            }else if(buff->str[i] == '\r') {
-                break;
-            }
-            parsed_field->str[unfolded_len++] = buff->str[i];
-        }
-        parsed_field->str[unfolded_len] = '\0';
-        parsed_field->len = unfolded_len;
+        parsed_field = parse_subject(buff, content_start);
     }
     return parsed_field;
 }
+
+
+void list_email(int connfd) {
+    char* tag = get_imap_tag();
+    char* command = NULL;
+    asprintf(&command, "%s FETCH 1:* BODY.PEEK[HEADER.FIELDS (Subject)]\r\n", tag);
+    int count = 0;
+    if (send_to_server(connfd, command, get_strlen(command)) > 0) {
+        string* buff = recv_from_server(connfd, tag);
+        for(int i = 0; i < buff->len; i++){
+            if(strncmp("\r\nSubject", buff->str + i, 9) == 0){
+                string* buff1 = create_string_from_char(buff->str + i);
+                string* parsed_subject = parse_field(buff1, "Subject");
+                count++;
+                if (parsed_subject != NULL) {
+                    printf("%d:%s\n",count, parsed_subject->str);
+                    free_string(parsed_subject);
+                }
+            }
+        }
+        free_string(buff);
+    }
+
+    free(command);
+}
+
+
+

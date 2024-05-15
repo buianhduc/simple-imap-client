@@ -10,6 +10,7 @@
 #include <netdb.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <stdbool.h>
 #include "utils.h"
 #include "communication.h"
 #include "dynamic_string.h"
@@ -32,5 +33,7 @@ struct mime{
 void parse_header(int connfd, int message_num);
 string* parse_field(string* buff, char* field);
 string *get_mime_section(char *content);
+void list_email(int connfd);
+string* parse_subject(string* buff, int content_start);
 
 #endif //_EMAIL_HANDLE_H_

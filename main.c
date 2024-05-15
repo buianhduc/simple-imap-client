@@ -99,7 +99,10 @@ int main(int argc, char *argv[]) {
             printf("%s",email->str);
         }else if(strcmp(command, "parse") == 0){
             parse_header(connfd, messageNum);
-        } else {
+        }else if(strcmp(command, "list") == 0){
+            list_email(connfd);
+        } 
+        else {
             email = retrieve_email(connfd, messageNum);
             string* mimeContent = get_mime_section(email->str);
             if (mimeContent == NULL){
