@@ -156,7 +156,7 @@ string* parse_field(string* buff, char* field) {
     int content_end = content_start;
 
     if (strcmp(field, "Subject") != 0) {
-        while (content_end < buff->len && buff->str[content_end] != '\n') {
+        while (content_end < buff->len && buff->str[content_end] != '\r') {
             content_end++;
         }
         parsed_field = create_string_from_char(buff->str + content_start);
@@ -169,7 +169,9 @@ string* parse_field(string* buff, char* field) {
             if ((buff->str[i] == '\r') && (i + 2 < buff->len) && (buff->str[i + 1] == '\n') && (buff->str[i + 2] == ' ')) {
                 i += 1; 
                 continue;
-            }else if(buff->str[i] == '\n') break;
+            }else if(buff->str[i] == '\r') {
+                break;
+            }
             parsed_field->str[unfolded_len++] = buff->str[i];
         }
         parsed_field->str[unfolded_len] = '\0';
