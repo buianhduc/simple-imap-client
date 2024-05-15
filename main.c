@@ -18,12 +18,52 @@
 extern int asprintf(char**, const char*, ...);
 
 extern int errno;
-
+extern char* strdup(char*);
 void setupTLS();
 
+int hasAnomolies(char* field){
+    char illegalChars[] = {'\r', '\n', '\"', '\'', '\\'};
+
+    for (int i = 0; i < sizeof illegalChars; i++){
+        if (strchr(field, illegalChars[i])) return 1;
+    }    
+    return 0;
+}
+
+void validate_args(char* username, char* password, char* command, char* server_name, long messageNum, int msgNumSpecified){
+    int isArgsCorrect = 1;
+    if (NULL == username) {
+        isArgsCorrect = 0;
+        fprintf(stderr, "No username provided\n");
+    } 
+    if (NULL == password) {
+        isArgsCorrect = 0;
+        fprintf(stderr, "No password provided\n");
+    }
+    if (NULL == command) {
+        isArgsCorrect = 0;
+        fprintf(stderr, "No command provided\n");
+    }
+    if (NULL == server_name){
+        isArgsCorrect = 0;
+        fprintf(stderr, "No server name provided\n");
+    }
+    if (messageNum < 1 && msgNumSpecified){
+        isArgsCorrect = 0;
+        fprintf(stderr, "Incorrect message num\n");
+    }
+    if (!isArgsCorrect) exit(E_INVALID_ARGS);
+
+    // Check for anomolies in username and password
+    if (hasAnomolies(username) || hasAnomolies(password)) {
+        fprintf(stderr, "There are anomolies either username or password\n");
+        exit(E_INVALID_ARGS);
+    }
+}
+
 int main(int argc, char *argv[]) {
-    int opt;
-    unsigned long messageNum = 0;
+    int opt, isMsgNumSpecified = 0;
+    long messageNum = -1;
     char *username=NULL, *password = NULL, *dir = NULL, *command = NULL, *server_name = NULL;
     // Arguments for the program:
     // fetchmail
@@ -32,46 +72,44 @@ int main(int argc, char *argv[]) {
 
     // Parse arguments for the program
     // Referenced from: https://stackoverflow.com/a/18079491
-    while ((opt = getopt(argc, argv, "u:p:f:n:t:")) != -1) {
+    
+    while ((opt = getopt(argc, argv, "u:p:f:n:t")) != -1) {
         switch (opt) {
-        case 'u':
-            username = malloc(strlen(optarg) + 1);
-            strcpy(username, optarg);
-            break;
-        case 'p':
-            password = malloc(strlen(optarg) + 1);
-            strcpy(password, optarg);
-            break;
-        case 'f':
-            dir = malloc(strlen(optarg) + 1);
-            strcpy(dir, optarg);
-            break;
-        case 'n':
-            messageNum = strtol(optarg, NULL, 10);
-            if (!optarg ) {
-                exit(E_INVALID_ARGS);
-            }
-            break;
-        case 't':
-            return 0;
-        default:
-            fprintf(stderr, "%s", "Unknown arguments!\n");
-            return E_INVALID_ARGS;
+            case 'u':
+                username = malloc(strlen(optarg) + 1);
+                strcpy(username, optarg);
+                break;
+            case 'p':
+                password = malloc(strlen(optarg) + 1);
+                strcpy(password, optarg);
+                break;
+            case 'f':
+                dir = malloc(strlen(optarg) + 1);
+                strcpy(dir, optarg);
+                break;
+            case 'n':
+                isMsgNumSpecified = 1;
+                messageNum = strtol(optarg, NULL, 10);
+                if (!optarg) {
+                    exit(E_INVALID_ARGS);
+                }
+                break;
+            case 't':
+                return 0;
+            default:
+                fprintf(stderr, "%s", "Unknown arguments!\n");
+                return E_INVALID_ARGS;
         }
-    }
+    } 
     for (int idx = optind; idx < argc; idx++){
-        if (command == NULL && argv[idx] != NULL){
-            command = malloc(strlen(argv[idx]) + 1);
-            strcpy(command, argv[idx]);
-        } else if (server_name == NULL && argv[idx] != NULL){
-            server_name = malloc(strlen(argv[idx]) + 1);
-            strcpy(server_name, argv[idx]);
-        }
+        if (command == NULL)  command = strdup(argv[idx]);
+        else if (server_name == NULL) server_name = strdup(argv[idx]);
     }
+
 
 
     // Validate program arguments
-    if (NULL == command || NULL == server_name) exit(E_INVALID_ARGS);
+    validate_args(username, password, command, server_name, messageNum, isMsgNumSpecified);
 
     // Create a socket
     struct addrinfo *addrSocket = NULL;
