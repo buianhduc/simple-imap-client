@@ -3,9 +3,17 @@
 //
 
 #include "communication.h"
+#define CREATE_CONNECTION_ERR -1
+#define DEFAULT_BUFFER_SIZE 2048
+
+int tagCounter = 0;
 
 char* get_imap_tag(){
-    return "A0001";
+    tagCounter++;
+    char* tag;
+    char chars[] = "abcdefghijkmnopqrstuvwsyz";
+    asprintf(&tag, "%c00%d", chars[tagCounter % sizeof chars], tagCounter);
+    return tag;
 }
 /**
  * Return connection descriptor
@@ -25,7 +33,7 @@ int create_connection(char* emailServer, char* port, struct addrinfo** res){
     if (0 != s){
         hints.ai_family = AF_INET;
         s = getaddrinfo(emailServer, port, &hints, res);
-        if (0 != s) handle_error(E_CONN_INIT);
+        if (0 != s) return CREATE_CONNECTION_ERR;
     }
 
     // Search for a socket
@@ -46,20 +54,15 @@ int create_connection(char* emailServer, char* port, struct addrinfo** res){
     }
 
     // Cannot connect to server
-    if (0 == canConnect) return -1;
+    if (0 == canConnect) return CREATE_CONNECTION_ERR;
 
 
     return connfd;
 }
 
-void handle_error(int errCode) {
-    fprintf(stderr, "SOMETHING WENT WRONG\n");
-    exit (errCode);
-}
-
 void check_response(int connfd) {
-    char *recvBuff = calloc(2048, sizeof(char));
-    ssize_t remainingBuffer = 2048;
+    char *recvBuff = calloc(DEFAULT_BUFFER_SIZE, sizeof(char));
+    ssize_t remainingBuffer = DEFAULT_BUFFER_SIZE;
 
     ssize_t byteReceived = recv(connfd, recvBuff, remainingBuffer, 0);
     if (byteReceived > 0) {
@@ -116,6 +119,7 @@ int login_to_server(int connfd, char *username, char *password) {
     char* command = NULL;
     char* tag = get_imap_tag();
     (void) asprintf(&command, "%s LOGIN \"%s\" \"%s\"\r\n", tag, username, password);
+    
     ssize_t byteSent = send_to_server(connfd, command, get_strlen(command));
     if (byteSent > 0){
         string* response = recv_from_server(connfd, tag);
@@ -123,6 +127,7 @@ int login_to_server(int connfd, char *username, char *password) {
             if (strstr(response->str, IMAP_OK) != NULL){
                 free_string(response);
                 free(command);
+                free(tag);
                 return 1;
             }
             if (strstr(response->str, IMAP_NO) != NULL){
@@ -130,8 +135,10 @@ int login_to_server(int connfd, char *username, char *password) {
             }
         }
         free_string(response);
+        free(tag);
     }
     free(command);
+    free(tag);
     return -1;
 }
 int select_folder(int connfd, const char *folderDirectory) {
@@ -148,6 +155,7 @@ int select_folder(int connfd, const char *folderDirectory) {
     if (strstr(response->str, IMAP_OK)){
         free(command);
         free_string(response);
+        free(tag);
         return 1;
     }
     if (strstr(response->str, IMAP_NO)) {
@@ -159,6 +167,7 @@ int select_folder(int connfd, const char *folderDirectory) {
 
     free_string(response);
     free(command);
+    free(tag);
     return -1;
 }
 string* parse_response(string* s, char* tag){
@@ -186,15 +195,18 @@ string* retrieve_email(int connfd, unsigned long num_message){
         asprintf(&command, "%s FETCH %lu BODY.PEEK[]\r\n", tag, num_message);
     if(send_to_server(connfd, command, get_strlen(command)) <= 0){
         free(command);
+        free(tag);
         return NULL;
     }
     string* buff = recv_from_server(connfd, tag);
     if (strstr(buff->str, IMAP_OK) != NULL){
         string* cnt = parse_response(buff, tag);
         free(command);
+        free(tag);
         free_string(buff);
         return cnt;
     }
+    free(tag);
     free_string(buff);
     free(command);
     return NULL;

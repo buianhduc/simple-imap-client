@@ -99,12 +99,12 @@ int main(int argc, char *argv[]) {
             if (strlen(optarg) > 0 && optarg[0] == '*') messageNum = -1;
             else {
                 for (int i = 0; i < strlen(optarg); i++) 
-                    if (!isdigit(optarg[i]) || optarg[i] != '*') {
+                    if (!isdigit(optarg[i])) {
                         fprintf(stderr, "Invalid sequence number\n");
                         exit(E_INVALID_ARGS);
                     }
                 
-                else messageNum = strtoll(optarg, NULL, 10);
+                    else messageNum = strtoll(optarg, NULL, 10);
             }
             break;
             case 't':
