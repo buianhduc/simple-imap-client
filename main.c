@@ -25,7 +25,6 @@ int main(int argc, char *argv[]) {
     int opt;
     unsigned long messageNum = 0;
     char *username=NULL, *password = NULL, *dir = NULL, *command = NULL, *server_name = NULL;
-    int useTLS = 0;
     // Arguments for the program:
     // fetchmail
     //        -u <username> -p <password> [-f <folder>] [-n <messageNum>]
@@ -54,8 +53,7 @@ int main(int argc, char *argv[]) {
             }
             break;
         case 't':
-            useTLS = 1;
-            break;
+            return 0;
         default:
             fprintf(stderr, "%s", "Unknown arguments!\n");
             return E_INVALID_ARGS;
