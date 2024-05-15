@@ -54,7 +54,7 @@ int create_connection(char* emailServer, char* port, struct addrinfo** res){
 
 void handle_error(int errCode) {
     fprintf(stderr, "SOMETHING WENT WRONG\n");
-    
+    exit (errCode);
 }
 
 void check_response(int connfd) {
