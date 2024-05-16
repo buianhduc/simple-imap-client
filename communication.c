@@ -3,8 +3,8 @@
 //
 
 #include "communication.h"
-#define CREATE_CONNECTION_ERR -1
 #define DEFAULT_BUFFER_SIZE 2048
+
 
 int tagCounter = 0;
 
@@ -60,7 +60,7 @@ int create_connection(char* emailServer, char* port, struct addrinfo** res){
     return connfd;
 }
 
-void check_response(int connfd) {
+int check_response(int connfd) {
     char *recvBuff = calloc(DEFAULT_BUFFER_SIZE, sizeof(char));
     ssize_t remainingBuffer = DEFAULT_BUFFER_SIZE;
 
@@ -76,10 +76,10 @@ void check_response(int connfd) {
             fprintf(stderr, "Connection Broken\n");
         }
         free(recvBuff);
-        return;
+        return 1;
     }
     free(recvBuff);
-    exit(E_SERVER_RESPONSE);
+    return -1;
 }
 
 string *recv_from_server(int connfd, char* tag){
@@ -138,7 +138,6 @@ int login_to_server(int connfd, char *username, char *password) {
         free(tag);
     }
     free(command);
-    free(tag);
     return -1;
 }
 int select_folder(int connfd, const char *folderDirectory) {

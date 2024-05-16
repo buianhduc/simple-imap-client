@@ -20,8 +20,6 @@
 extern int asprintf(char**, const char*, ...);
 
 extern int errno;
-extern char* strdup(char*);
-void setupTLS();
 
 int hasAnomolies(char* field){
     char illegalChars[] = {'\r', '\n', '\"', '\'', '\\'};
@@ -66,13 +64,23 @@ void validate_args(char* username, char* password, char* command, char* server_n
 }
 
 
-
+void freePtrs(char* username, char* password, char* dir, char* command, char* server_name, struct addrinfo* addrSocket){
+    if (username != NULL) free(username);
+    if (password != NULL) free(password);
+    if (dir != NULL) free(dir);
+    if (command != NULL) free(command);
+    if (server_name != NULL) free(server_name);
+    if (addrSocket != NULL)
+        freeaddrinfo(addrSocket);
+}
 
 
 int main(int argc, char *argv[]) {
     int opt, isMsgNumSpecified = 0;
     long long messageNum = -1;
     char *username=NULL, *password = NULL, *dir = NULL, *command = NULL, *server_name = NULL;
+    struct addrinfo *addrSocket = NULL;
+    int errCode = 0;
     // Arguments for the program:
     // fetchmail
     //        -u <username> -p <password> [-f <folder>] [-n <messageNum>]
@@ -125,45 +133,51 @@ int main(int argc, char *argv[]) {
     validate_args(username, password, command, server_name, messageNum, isMsgNumSpecified);
 
     // Create a socket
-    struct addrinfo *addrSocket = NULL;
+
     int connfd = create_connection(server_name, PORT, &addrSocket);
 
-    // Connection successful
-    if (-1 != connfd){
-        check_response(connfd);
-        if (1 == login_to_server(connfd, username, password)){
-            fprintf(stderr, "LOGIN OK\n");
-        } else {
-            printf("Login failure\n");
-            exit(E_SERVER_RESPONSE);
-        }
-        if (1 == select_folder(connfd, dir)){
-            fprintf(stderr, "SELECT OK\n");
-        } else {
-            printf("Folder not found\n");
-            exit(E_SERVER_RESPONSE);
-        }
-        string* email = NULL;
-        if (!strcmp(command, "retrieve")){
-            email = retrieve_email(connfd, messageNum);
-            if (email == NULL){
-                printf("Message not found\n");
-                exit(E_SERVER_RESPONSE);
-            } 
-            printf("%s",email->str);
-        } else {
-            email = retrieve_email(connfd, messageNum);
-            string* mimeContent = get_mime_section(email->str);
-            if (mimeContent == NULL){
-                printf("MIME Parsing Error");
-                return E_PARSE;
-            }
+    // Connection init unsuccessful or  If server doesn't return the correct greeting
+    if (CREATE_CONNECTION_ERR == connfd || check_response(connfd) < 0) {
+        freePtrs(username, password, dir, command, server_name, addrSocket);
+        exit(E_CONN_INIT);
+    }
 
+    // If login fails
+    if (0 > login_to_server(connfd, username, password)) {
+        printf("Login failure\n");
+//        freePtrs(username, password, dir, command, server_name, addrSocket);
+        exit(E_SERVER_RESPONSE);
+    }
+    fprintf(stderr, "LOGIN OK\n");
+
+    // Select folder directory failed
+    if (0 > select_folder(connfd, dir)){
+        printf("Folder not found\n");
+        freePtrs(username, password, dir, command, server_name, addrSocket);
+        exit(E_SERVER_RESPONSE);
+    }
+    fprintf(stderr, "SELECT OK\n");
+
+    string* email = NULL;
+    if (!strcmp(command, "retrieve")){
+        email = retrieve_email(connfd, messageNum);
+        if (email == NULL){
+            printf("Message not found\n");
+            exit(E_SERVER_RESPONSE);
+        }
+        printf("%s",email->str);
+    } else if (!strcmp(command, "mime")) {
+        email = retrieve_email(connfd, messageNum);
+        string* mimeContent = get_mime_section(email->str);
+        if (mimeContent == NULL){
+            printf("MIME Parsing Error");
+            return E_PARSE;
+        } else {
             printf("%s", mimeContent->str);
             free_string(mimeContent);
         }
-        if (email != NULL) free_string(email);
     }
+    if (email != NULL) free_string(email);
     char *exit_command;
     asprintf(&exit_command, "%s LOGOUT\r\n", "A01");
     send_to_server(connfd, exit_command ,get_strlen((exit_command)));
@@ -174,14 +188,7 @@ int main(int argc, char *argv[]) {
     if (-1 == close(connfd)) {
         fprintf(stderr, "Error closing connection");
     }
-    free(exit_command);
-    free_string(response);
     // Free pointers
-    free(username);
-    free(password);
-    if (NULL != dir) free(dir);
-    free(command);
-    free(server_name);
-    if (addrSocket != NULL) freeaddrinfo(addrSocket);
+    freePtrs(username, password, dir, command, server_name, addrSocket);
     return EXIT_SUCCESS;
 }

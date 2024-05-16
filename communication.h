@@ -18,13 +18,15 @@
 #include "dynamic_string.h"
 #include "utils.h"
 
+#define CREATE_CONNECTION_ERR (-1)
+
 struct addrinfo;
 
 int asprintf(char **ret, const char *format, ...);
 // ===== Base operation for communicating with the server ====
 void handle_error(int errCode);
 int create_connection(char* emailServer, char* port, struct addrinfo **res);
-void check_response(int connfd);
+int check_response(int connfd);
 string *recv_from_server(int connfd, char* tag);
 ssize_t send_to_server(int connfd, char* command, size_t nbytes);
 

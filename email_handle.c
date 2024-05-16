@@ -75,9 +75,7 @@ string *get_mime_section(char *content){
     if (*tmp == '"') {
         tmp++;
         boundaryValuePtr ++;
-        for (; *tmp != '"' && (tmp - boundaryValuePtr) <= DEFAULT_BOUNDARY_LENGTH; tmp++){
-//            if (*tmp == '\\') tmp++;
-        }
+        for (; *tmp != '"' && (tmp - boundaryValuePtr) <= DEFAULT_BOUNDARY_LENGTH; tmp++);
     } else
         for (; *tmp != '\r' && *(tmp+1) != '\n'; tmp++);
     char* boundaryValue = calloc(DEFAULT_BOUNDARY_LENGTH, sizeof(char));
