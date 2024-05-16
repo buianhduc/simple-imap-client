@@ -1,5 +1,5 @@
 //
-// Created by Đức Bùi on 3/5/24.
+// File where email-related functions
 //
 #define _POSIX_C_SOURCE 200112L
 #ifndef _EMAIL_HANDLE_H_
@@ -15,25 +15,28 @@
 #include "communication.h"
 #include "dynamic_string.h"
 
-// ===== Email conventions =====
-#define LINE_FOLDING "\r\n "
-// ===== End of email conventions =====
-
-// ==== structs ====
-struct field{
-    string* name;
-    string* content;
-};
-struct mime{
-    string* contentTransferEncoding, contentType;
-    string* content;
-};
-// ==== end of structs ====
-
-void parse_header(int connfd, long long int message_num);
+/**
+ * @fn: parse_header 
+ * parse header of specified email
+ * @param connfd: connection file descriptor
+ * @param message_num: the message number wished to get header, -1 gets the most recent
+*/
+void parse_header(int connfd, long long message_num);
+/**
+ * @fn: parse_field 
+ * parse field for email header
+ * @param connfd: connection file descriptor
+ * @param message_num: the message number wished to get header, -1 gets the most recent
+*/
 string* parse_field(string* buff, char* field);
+/**
+ * @fn: get_mime_section:
+ * return first text/plain mime section
+ * @param content: raw email
+ * @return first text/plain mime section
+*/
 string *get_mime_section(char *content);
 void list_email(int connfd);
-string* parse_subject(string* buff, int content_start);
+
 
 #endif //_EMAIL_HANDLE_H_

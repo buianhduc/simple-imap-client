@@ -60,7 +60,7 @@ int create_connection(char* emailServer, char* port, struct addrinfo** res){
     return connfd;
 }
 
-int check_response(int connfd) {
+int check_greeting(int connfd) {
     char *recvBuff = calloc(DEFAULT_BUFFER_SIZE, sizeof(char));
     ssize_t remainingBuffer = DEFAULT_BUFFER_SIZE;
 
@@ -185,7 +185,7 @@ string* parse_response(string* s, char* tag){
     
     return content;
 }
-string* retrieve_email(int connfd, unsigned long num_message){
+string* retrieve_email(int connfd, long long num_message){
     char* command = NULL;
     char* tag = get_imap_tag();
     if (num_message == -1)

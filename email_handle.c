@@ -11,22 +11,12 @@
 #define MIME_HEADER_START "MIME-Version: 1.0\r\nContent-Type: multipart/alternative;"
 #define DEFAULT_BOUNDARY_LENGTH 70
 
+// Forward declaration
 char* strdup(const char *s);
 char* strcasestr(char*, char*);
 int strncasecmp(const char*, const char*, unsigned long);
 
-struct mime_s{
-    char* plain_message;
-    char* encoding_type;
-    char* content_type;
-};
-
-typedef struct emailHeader{
-    char* from;
-    char* to;
-    char* date;
-    char* subject;
-}emailHeader_t;
+// Internal functions
 
 string* get_mime_plain(string* msg, char* boundaryStart, char* boundaryEnd){
     string* result = NULL;
@@ -66,92 +56,6 @@ string* get_mime_plain(string* msg, char* boundaryStart, char* boundaryEnd){
     return result;
 }
 
-string *get_mime_section(char *content){
-    if (content == NULL) return NULL;
-    // Find MIME Header
-    char* mimeHeader = strcasestr(content, "\r\nMIME-Version:");
-    if (mimeHeader == NULL) return NULL;
-
-    char* contentType = strcasestr(mimeHeader, "\r\nContent-type:");
-    if (contentType == NULL) return NULL;
-
-    // Find Boundary value
-    char* boundaryValuePtr = strcasestr(contentType, "boundary=");
-    if (boundaryValuePtr == NULL) return NULL;
-    boundaryValuePtr += strlen("boundary=");
-    char *tmp = boundaryValuePtr;
-    if (*tmp == '"') {
-        tmp++;
-        boundaryValuePtr ++;
-        for (; *tmp != '"' && (tmp - boundaryValuePtr) <= DEFAULT_BOUNDARY_LENGTH; tmp++);
-    } else
-        for (; *tmp != '\r' && *(tmp+1) != '\n'; tmp++);
-    char* boundaryValue = calloc(DEFAULT_BOUNDARY_LENGTH, sizeof(char));
-    if (boundaryValue == NULL){
-        free(content);
-        return NULL;
-    }
-    boundaryValue = strncpy(boundaryValue, boundaryValuePtr, (tmp - boundaryValuePtr));
-    boundaryValue[tmp - boundaryValuePtr] = '\0';
-
-
-    // Extract content within boundary
-    char* boundaryStart = NULL, *boundaryEnd = NULL;
-    (void) asprintf(&boundaryStart, "\r\n--%s\r\n", boundaryValue);
-    (void) asprintf(&boundaryEnd, "\r\n--%s--\r\n", boundaryValue);
-    if (boundaryStart == NULL ||boundaryEnd == NULL){
-        exit(E_OTHER);
-    }
-
-    char* sectionStart = strcasestr(content, boundaryStart);
-    char* sectionEnd = strcasestr(content, boundaryEnd);
-    if (sectionEnd == NULL || sectionStart == NULL) exit (E_PARSE);
-
-    if (sectionEnd - content + strlen(boundaryEnd) > strlen(content)) {
-        exit(E_PARSE);
-    }
-
-    sectionEnd += strlen(boundaryEnd);
-
-    string* mimeSection = create_string(sectionEnd - sectionStart + 2);
-    mimeSection->str = strncpy(mimeSection->str, sectionStart, sectionEnd - sectionStart + 1);
-    mimeSection->len = (sectionEnd - sectionStart);
-    mimeSection->str[mimeSection->len] = '\0';
-    string* result = get_mime_plain(mimeSection, boundaryStart, boundaryEnd);
-
-    free(boundaryStart);
-    free(boundaryEnd);
-    free(boundaryValue);
-    free_string(mimeSection);
-    return result;
-}
-
-void parse_header(int connfd, long long int message_num){
-
-    char* tag = get_imap_tag();
-    char* fields[] = {"From", "To", "Date", "Subject"};
-    for(int i = 0; i < 4; i++){
-        char* command = NULL;
-        if(message_num == -1){
-            asprintf(&command, "%s FETCH * BODY.PEEK[HEADER.FIELDS (%s)]\r\n", tag, fields[i]);
-        }else{
-            asprintf(&command, "%s FETCH %d BODY.PEEK[HEADER.FIELDS (%s)]\r\n", tag, message_num, fields[i]);
-        }
-        if(send_to_server(connfd, command, get_strlen(command)) > 0){
-            string* buff = recv_from_server(connfd, tag);
-            string* result = (parse_field(buff, fields[i]));
-            if(strstr(buff->str, IMAP_OK) != NULL){
-                printf("%s:%s\n", fields[i], result->str);
-            }
-            free_string(result);
-            free_string(buff);
-        }
-        
-        free(command);
-    }
-    free(tag);
-}
-
 string* parse_subject(string* buff, int content_start) {
     string* parsed_field = create_string(buff->size + 1);
     int unfolded_len = 0;
@@ -173,6 +77,104 @@ string* parse_subject(string* buff, int content_start) {
     parsed_field->len = unfolded_len;
     return parsed_field;
 }
+// End of internal functions
+
+
+string *get_mime_section(char *content){
+    if (content == NULL) return NULL;
+    // Find MIME Header
+    char* mimeHeader = strcasestr(content, "\r\nMIME-Version:");
+    if (mimeHeader == NULL) return NULL;
+
+    char* contentType = strcasestr(mimeHeader, "\r\nContent-type:");
+    if (contentType == NULL) return NULL;
+
+    // Find Boundary value
+    char* boundaryValuePtr = strcasestr(contentType, "boundary=");
+    // if no boundary value specifier found
+    if (boundaryValuePtr == NULL) return NULL;
+    boundaryValuePtr += strlen("boundary=");
+    char *tmp = boundaryValuePtr;
+    // If boundary value starts with ", find until the next "
+    if (*tmp == '"') {
+        tmp++;
+        boundaryValuePtr ++;
+        for (; *tmp != '"' && (tmp - boundaryValuePtr) <= DEFAULT_BOUNDARY_LENGTH; tmp++);
+    } else // No quotation mark specified, find until CRLF
+        for (; *tmp != '\r' && *(tmp+1) != '\n'; tmp++);
+    
+    char* boundaryValue = calloc(DEFAULT_BOUNDARY_LENGTH, sizeof(char));
+    // If boundaryValue cannot be allocated
+    if (boundaryValue == NULL){
+        free(content);
+        return NULL;
+    }
+    // Copy the boundary value
+    boundaryValue = strncpy(boundaryValue, boundaryValuePtr, (tmp - boundaryValuePtr));
+    boundaryValue[tmp - boundaryValuePtr] = '\0';
+
+
+    // Extract content within boundary
+    char* boundaryStart = NULL, *boundaryEnd = NULL;
+    (void) asprintf(&boundaryStart, "\r\n--%s\r\n", boundaryValue);
+    (void) asprintf(&boundaryEnd, "\r\n--%s--\r\n", boundaryValue);
+    if (boundaryStart == NULL ||boundaryEnd == NULL){
+        exit(E_OTHER);
+    }
+
+    char* sectionStart = strcasestr(content, boundaryStart);
+    char* sectionEnd = strcasestr(content, boundaryEnd);
+    if (sectionEnd == NULL || sectionStart == NULL) exit (E_PARSE);
+
+    // If the range of sections more than the content
+    if (sectionEnd - content + strlen(boundaryEnd) > strlen(content)) {
+        exit(E_PARSE);
+    }
+    // push section end until the end of the boundary
+    sectionEnd += strlen(boundaryEnd);
+
+    // Extract ther mime section
+    string* mimeSection = create_string(sectionEnd - sectionStart + 2);
+    mimeSection->str = strncpy(mimeSection->str, sectionStart, sectionEnd - sectionStart + 1);
+    mimeSection->len = (sectionEnd - sectionStart);
+    mimeSection->str[mimeSection->len] = '\0';
+    // Get the first MIME text/plain section
+    string* result = get_mime_plain(mimeSection, boundaryStart, boundaryEnd);
+
+    free(boundaryStart);
+    free(boundaryEnd);
+    free(boundaryValue);
+    free_string(mimeSection);
+    return result;
+}
+
+void parse_header(int connfd, long long int message_num){
+    char* tag = get_imap_tag();
+    char* fields[] = {"From", "To", "Date", "Subject"};
+    for(int i = 0; i < sizeof fields; i++){
+        char* command = NULL;
+        if(message_num == -1){
+            asprintf(&command, "%s FETCH * BODY.PEEK[HEADER.FIELDS (%s)]\r\n", tag, fields[i]);
+        }else{
+            asprintf(&command, "%s FETCH %d BODY.PEEK[HEADER.FIELDS (%s)]\r\n", tag, message_num, fields[i]);
+        }
+
+        if(send_to_server(connfd, command, get_strlen(command)) > 0){
+            string* buff = recv_from_server(connfd, tag);
+            string* result = (parse_field(buff, fields[i]));
+            if(strstr(buff->str, IMAP_OK) != NULL){
+                printf("%s:%s\n", fields[i], result->str);
+            }
+            free_string(result);
+            free_string(buff);
+        }
+        
+        free(command);
+    }
+    free(tag);
+}
+
+
 
 string* parse_field(string* buff, char* field) {
     string* parsed_field;
@@ -181,6 +183,7 @@ string* parse_field(string* buff, char* field) {
     int content_start = field_end + 1;
     int content_end = content_start;
 
+    // Since the subject field can be folded
     if (strcmp(field, "Subject") != 0) {
         while (content_end < buff->len && buff->str[content_end] != '\r') {
             content_end++;
@@ -203,7 +206,8 @@ void list_email(int connfd) {
     if (send_to_server(connfd, command, get_strlen(command)) > 0) {
         string* buff = recv_from_server(connfd, tag);
         for(int i = 0; i < buff->len; i++){
-            if(strncmp("FETCH", buff->str + i, 5) == 0){
+            // extract content from FETCH call
+            if(strncasecmp("FETCH", buff->str + i, 5) == 0){
                 string* content = create_string_from_char(buff->str + i);
                 string* parsed_subject = parse_field(content, "Subject");
                 count++;

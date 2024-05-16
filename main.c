@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
     int connfd = create_connection(server_name, PORT, &addrSocket);
 
     // Connection init unsuccessful or  If server doesn't return the correct greeting
-    if (CREATE_CONNECTION_ERR == connfd || check_response(connfd) < 0) {
+    if (CREATE_CONNECTION_ERR == connfd || check_greeting(connfd) < 0) {
         freePtrs(username, password, dir, command, server_name, addrSocket);
         exit(E_CONN_INIT);
     }
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
     // If login fails
     if (0 > login_to_server(connfd, username, password)) {
         printf("Login failure\n");
-//        freePtrs(username, password, dir, command, server_name, addrSocket);
+        freePtrs(username, password, dir, command, server_name, addrSocket);
         exit(E_SERVER_RESPONSE);
     }
     fprintf(stderr, "LOGIN OK\n");
@@ -158,16 +158,17 @@ int main(int argc, char *argv[]) {
     }
     fprintf(stderr, "SELECT OK\n");
 
-    string* email = NULL;
+    // Excecute command
     if (!strcmp(command, "retrieve")){
-        email = retrieve_email(connfd, messageNum);
+        string* email = retrieve_email(connfd, messageNum);
         if (email == NULL){
             printf("Message not found\n");
             exit(E_SERVER_RESPONSE);
         }
         printf("%s",email->str);
+        free_string(email);
     } else if (!strcmp(command, "mime")) {
-        email = retrieve_email(connfd, messageNum);
+        string* email = retrieve_email(connfd, messageNum);
         string* mimeContent = get_mime_section(email->str);
         if (mimeContent == NULL){
             printf("MIME Parsing Error");
@@ -176,18 +177,23 @@ int main(int argc, char *argv[]) {
             printf("%s", mimeContent->str);
             free_string(mimeContent);
         }
+        free_string(email);
     } else if (!strcmp(command, "parse")){
         parse_header(connfd, messageNum);
     } else if (!strcmp(command, "list")) {
         list_email(connfd);
+    } else {
+        fprintf(stderr, "Command doesn't exist. Only accepted command\n\t retrieve\n\t parse\n\t mime\n\t list\n");
     }
 
-    if (email != NULL) free_string(email);
+    // Disconnect from server
     char *exit_command;
     asprintf(&exit_command, "%s LOGOUT\r\n", "A01");
-    send_to_server(connfd, exit_command ,get_strlen((exit_command)));
+    if (send_to_server(connfd, exit_command ,get_strlen((exit_command)) <= 0)){
+        fprintf(stderr, "The server has already shutdown/The connection does not exist");
+    }
     
-    string* response = recv_from_server(connfd, "A01");
+    string* response = recv_from_server(connfd, "A02");
     if (strstr(response->str, "BYE") == NULL) {
         fprintf(stderr, "Error logout from server");
     }
