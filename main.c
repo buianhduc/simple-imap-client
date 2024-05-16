@@ -26,7 +26,7 @@ int hasAnomolies(char* field){
 
     for (int i = 0; i < sizeof illegalChars; i++){
         if (strchr(field, illegalChars[i])) return 1;
-    }    
+    }
     return 0;
 }
 
@@ -37,7 +37,7 @@ void validate_args(char* username, char* password, char* command, char* server_n
     if (NULL == username) {
         isArgsCorrect = 0;
         fprintf(stderr, "No username provided\n");
-    } 
+    }
     if (NULL == password) {
         isArgsCorrect = 0;
         fprintf(stderr, "No password provided\n");
@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 
     // Parse arguments for the program
     // Referenced from: https://stackoverflow.com/a/18079491
-    
+
     while ((opt = getopt(argc, argv, "u:p:f:n:t")) != -1) {
         switch (opt) {
             case 'u':
@@ -106,12 +106,12 @@ int main(int argc, char *argv[]) {
             case 'n':
             if (strlen(optarg) > 0 && optarg[0] == '*') messageNum = -1;
             else {
-                for (int i = 0; i < strlen(optarg); i++) 
+                for (int i = 0; i < strlen(optarg); i++)
                     if (!isdigit(optarg[i])) {
                         fprintf(stderr, "Invalid sequence number\n");
                         exit(E_INVALID_ARGS);
                     }
-                
+
                     else messageNum = strtoll(optarg, NULL, 10);
             }
             break;
@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
                 fprintf(stderr, "%s", "Unknown arguments!\n");
                 return E_INVALID_ARGS;
         }
-    } 
+    }
     for (int idx = optind; idx < argc; idx++){
         if (command == NULL)  command = strdup(argv[idx]);
         else if (server_name == NULL) server_name = strdup(argv[idx]);
@@ -178,6 +178,8 @@ int main(int argc, char *argv[]) {
         }
     } else if (!strcmp(command, "parse")){
         parse_header(connfd, messageNum);
+    } else if (!strcmp(command, "list")) {
+        list_email(connfd);
     }
 
     if (email != NULL) free_string(email);
