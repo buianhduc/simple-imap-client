@@ -151,12 +151,12 @@ string *get_mime_section(char *content){
 void parse_header(int connfd, long long int message_num){
     char* tag = get_imap_tag();
     char* fields[] = {"From", "To", "Date", "Subject"};
-    for(int i = 0; i < sizeof fields; i++){
+    for(int i = 0; i < 4; i++){
         char* command = NULL;
         if(message_num == -1){
             asprintf(&command, "%s FETCH * BODY.PEEK[HEADER.FIELDS (%s)]\r\n", tag, fields[i]);
         }else{
-            asprintf(&command, "%s FETCH %d BODY.PEEK[HEADER.FIELDS (%s)]\r\n", tag, message_num, fields[i]);
+            asprintf(&command, "%s FETCH %lld BODY.PEEK[HEADER.FIELDS (%s)]\r\n", tag, message_num, fields[i]);
         }
 
         if(send_to_server(connfd, command, get_strlen(command)) > 0){

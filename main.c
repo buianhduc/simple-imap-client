@@ -188,12 +188,13 @@ int main(int argc, char *argv[]) {
 
     // Disconnect from server
     char *exit_command;
-    asprintf(&exit_command, "%s LOGOUT\r\n", "A01");
-    if (send_to_server(connfd, exit_command ,get_strlen((exit_command)) <= 0)){
+    char* tag = get_imap_tag();
+    asprintf(&exit_command, "%s LOGOUT\r\n", tag);
+    if (send_to_server(connfd, exit_command ,get_strlen((exit_command))) <= 0){
         fprintf(stderr, "The server has already shutdown/The connection does not exist");
     }
     
-    string* response = recv_from_server(connfd, "A02");
+    string* response = recv_from_server(connfd, tag);
     if (strstr(response->str, "BYE") == NULL) {
         fprintf(stderr, "Error logout from server");
     }
@@ -202,6 +203,7 @@ int main(int argc, char *argv[]) {
     }
     // Free pointers
     free_string(response);
+    free(tag);
     if (exit_command) free(exit_command);
     freePtrs(username, password, dir, command, server_name, addrSocket);
     return EXIT_SUCCESS;

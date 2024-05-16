@@ -84,6 +84,7 @@ int check_greeting(int connfd) {
 
 string *recv_from_server(int connfd, char* tag){
     char* recvBuff = calloc(BUFFER_DEFAULT_SIZE + 2, sizeof(char));
+
     string *result = create_string(BUFFER_DEFAULT_SIZE + 1);
     do{
         ssize_t receivedBytes = recv(connfd, recvBuff, BUFFER_DEFAULT_SIZE, 0);
