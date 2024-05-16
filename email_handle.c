@@ -146,9 +146,10 @@ void parse_header(int connfd, long long int message_num){
             free_string(result);
             free_string(buff);
         }
+        
         free(command);
     }
-    
+    free(tag);
 }
 
 string* parse_subject(string* buff, int content_start) {
@@ -214,7 +215,7 @@ void list_email(int connfd) {
         }
         free_string(buff);
     }
-
+    free(tag);
     free(command);
 }
 

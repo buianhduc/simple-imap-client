@@ -186,6 +186,7 @@ int main(int argc, char *argv[]) {
     char *exit_command;
     asprintf(&exit_command, "%s LOGOUT\r\n", "A01");
     send_to_server(connfd, exit_command ,get_strlen((exit_command)));
+    
     string* response = recv_from_server(connfd, "A01");
     if (strstr(response->str, "BYE") == NULL) {
         fprintf(stderr, "Error logout from server");
@@ -194,6 +195,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error closing connection");
     }
     // Free pointers
+    free_string(response);
+    if (exit_command) free(exit_command);
     freePtrs(username, password, dir, command, server_name, addrSocket);
     return EXIT_SUCCESS;
 }
