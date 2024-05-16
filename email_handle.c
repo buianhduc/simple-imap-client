@@ -153,10 +153,11 @@ void parse_header(int connfd, long long int message_num){
 }
 
 string* parse_subject(string* buff, int content_start) {
-    string* parsed_field = create_string(2048);
+    string* parsed_field = create_string(buff->size + 1);
     int unfolded_len = 0;
+    
     for (int i = content_start; i < buff->len; i++) {
-        if ((buff->str[i] == '\r') && (i + 2 < buff->len) && (buff->str[i + 1] == '\n') && (buff->str[i + 2] == ' ')) {
+        if ((buff->str[i] == '\r') && (i + 2 < buff->len) && (buff->str[i + 1] == '\n') && (buff->str[i + 2] == ' ' || buff->str[i + 2] == '\t')) {
             i += 1;
             continue;
         } else if (buff->str[i] == '\r') {
