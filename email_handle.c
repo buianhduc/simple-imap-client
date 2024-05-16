@@ -126,7 +126,7 @@ string *get_mime_section(char *content){
     return result;
 }
 
-void parse_header(int connfd, int message_num){
+void parse_header(int connfd, long long int message_num){
 
     char* tag = get_imap_tag();
     char* fields[] = {"From", "To", "Date", "Subject"};

@@ -29,7 +29,7 @@ struct mime{
 };
 // ==== end of structs ====
 
-void parse_header(int connfd, int message_num);
+void parse_header(int connfd, long long int message_num);
 string* parse_field(string* buff, char* field);
 string *get_mime_section(char *content);
 

@@ -176,7 +176,10 @@ int main(int argc, char *argv[]) {
             printf("%s", mimeContent->str);
             free_string(mimeContent);
         }
+    } else if (!strcmp(command, "parse")){
+        parse_header(connfd, messageNum);
     }
+
     if (email != NULL) free_string(email);
     char *exit_command;
     asprintf(&exit_command, "%s LOGOUT\r\n", "A01");
