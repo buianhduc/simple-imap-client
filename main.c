@@ -18,6 +18,7 @@
 #define PORT "143"
 
 extern int asprintf(char**, const char*, ...);
+char* strdup(char*);
 
 extern int errno;
 
@@ -80,7 +81,6 @@ int main(int argc, char *argv[]) {
     long long messageNum = -1;
     char *username=NULL, *password = NULL, *dir = NULL, *command = NULL, *server_name = NULL;
     struct addrinfo *addrSocket = NULL;
-    int errCode = 0;
     // Arguments for the program:
     // fetchmail
     //        -u <username> -p <password> [-f <folder>] [-n <messageNum>]
