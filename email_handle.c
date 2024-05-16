@@ -197,13 +197,14 @@ void list_email(int connfd) {
     if (send_to_server(connfd, command, get_strlen(command)) > 0) {
         string* buff = recv_from_server(connfd, tag);
         for(int i = 0; i < buff->len; i++){
-            if(strncmp("\r\nSubject", buff->str + i, 9) == 0){
-                string* buff1 = create_string_from_char(buff->str + i);
-                string* parsed_subject = parse_field(buff1, "Subject");
+            if(strncmp("FETCH", buff->str + i, 5) == 0){
+                string* content = create_string_from_char(buff->str + i);
+                string* parsed_subject = parse_field(content, "Subject");
                 count++;
                 if (parsed_subject != NULL) {
                     printf("%d:%s\n",count, parsed_subject->str);
                     free_string(parsed_subject);
+                    free_string(content);
                 }
             }
         }
