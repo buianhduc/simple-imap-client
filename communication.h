@@ -29,7 +29,7 @@ int create_connection(char* emailServer, char* port, struct addrinfo **res);
 int check_response(int connfd);
 string *recv_from_server(int connfd, char* tag);
 ssize_t send_to_server(int connfd, char* command, size_t nbytes);
-
+char* get_imap_tag();
 
 // ===== Routines for client =====
 int login_to_server(int connfd, char *username, char *password);
